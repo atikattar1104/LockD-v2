@@ -1,0 +1,610 @@
+# trap '' 2 3 19 20
+
+FAILEDPWORDCOUNT=5
+FAILEDUNAMECOUNT=5
+FAILEDHNAMECOUNT=5
+
+LOCKDPASSWDPATH=""
+
+alias OBFS_CHAIN="b3sum --tag -l 65536 | b3sum --tag -l 32768 | b3sum --tag -l 16384 | b3sum --tag -l 8192 | b3sum --tag -l 4096 | b3sum --tag -l 2048 | b3sum --tag -l 1024 | b3sum --tag -l 768 | b3sum --tag -l 512 | b3sum --tag -l 384 | b3sum --tag -l 256 | b3sum --tag -l 192 | b3sum --tag -l 128 | b3sum --tag -l 96 | b3sum --tag -l 64 | b3sum --tag -l 48 | b3sum --tag -l 32 | b3sum --tag -l 24 | b2sum --tag -l 512 | b2sum --tag -l 384 | b2sum --tag -l 256 | b2sum --tag -l 192 | b2sum --tag -l 128 | b2sum --tag -l 96 | b2sum --tag -l 64 | b2sum --tag -l 48 | b2sum --tag -l 32 | b2sum --tag -l 24 | shasum --tag -a 512256 | shasum --tag -a 512224 | shasum --tag -a 512 | shasum --tag -a 384 | shasum --tag -a 256 | shasum --tag -a 224 | shasum --tag -a 1 | xxhsum --tag -H2 | xxhsum --tag -H3 | xxhsum --tag -H1 | xxhsum --tag -H0 | cksum --tag -a sm3 | hashdeep -c tiger | hashdeep -c whirlpool | hashdeep -c tiger,whirlpool | md5sum --tag | basenc --base32 | basenc --base32hex | basenc --base64"
+
+LOGGEDIN=0
+
+hname_check() {
+while true :
+do
+	if [[ $LOGGEDIN -eq 0 ]]; then
+		if [[ $FAILEDHNAMECOUNT -gt 0 ]]; then
+			echo -n "Hostname :- "
+			read -r HNAME
+
+			OBFSHNAME=$(echo $HNAME | OBFS_CHAIN)
+
+			if [[ -d "$LOCKDPASSWDPATH/$OBFSHNAME" ]]; then
+ 				uname_check
+			else
+				((FAILEDHNAMECOUNT--))
+				printf "\n"
+				echo "Invalid Hostname! $FAILEDHNAMECOUNT Attempts Left!"
+			fi
+		elif [[ $FAILEDHNAMECOUNT -eq 0 ]]; then
+			unalias OBFS_CHAIN
+			clear ; kill -9 $PPID
+			break
+		fi
+	else
+#		trap - 2 3 19 20
+		unalias OBFS_CHAIN
+		break
+	fi
+done
+}
+
+uname_check() {
+while true :
+do
+	if [[ $LOGGEDIN -eq 0 ]]; then
+		if [[ $FAILEDUNAMECOUNT -gt 0 ]]; then
+			echo -n "Username :- "
+			read -r UNAME
+
+			OBFSUNAME=$(echo $UNAME | OBFS_CHAIN)
+
+			if [[ -d "$LOCKDPASSWDPATH/$OBFSHNAME/$OBFSUNAME" ]]; then
+				pword_check
+			else
+				((FAILEDUNAMECOUNT--))
+				printf "\n"
+				echo "Invalid Username! $FAILEDUNAMECOUNT Attempts Left!"
+			fi
+		elif [[ $FAILEDUNAMECOUNT -eq 0 ]]; then
+			unalias OBFS_CHAIN
+			clear ; kill -9 $PPID
+			break
+		fi
+	else
+		break
+	fi
+done
+}
+
+pword_check() {
+while true :
+do
+	if [[ $LOGGEDIN -eq 0 ]]; then
+		if [[ $FAILEDPWORDCOUNT -gt 0 ]]; then
+			echo -n "Password :- "
+			read -rs PWORD
+
+			OBFSPWORD=$(echo $PWORD | OBFS_CHAIN)
+
+			if [[ -d "$LOCKDPASSWDPATH/$OBFSHNAME/$OBFSUNAME/$OBFSPWORD" ]]; then
+				printf "\n\n"
+				echo "Welcome $UNAME!"
+				((LOGGEDIN++))
+				break
+			else
+				((FAILEDPWORDCOUNT--))
+				printf "\n"
+				echo "Invalid Password! $FAILEDPWORDCOUNT Attempts Left!"
+			fi
+		elif [[ $FAILEDPWORDCOUNT -eq 0 ]]; then
+			unalias OBFS_CHAIN
+			clear ; kill -9 $PPID
+			break
+		fi
+	else
+		break
+	fi
+done
+}
+
+migrate_passwd_directory() {
+	echo "Previous PassWD Directory Path :- $LOCKDPASSWDPATH"
+	printf "\n"
+
+	echo -n "Enter The New PassWD Directory Path (DO NOT END WITH '/') :- "
+	read -r NEWPASSWDPATH
+	printf "\n"
+
+	echo "Migrating From $LOCKDPASSWDPATH To $NEWPASSWDPATH"
+	echo -n "Confirm? (y/n) :- "
+	read -r MIGRATECONFIRM
+	printf "\n"
+
+	if [[ MIGRATECONFIRM == y ]]; then
+		if [[ -d "$NEWPASSWDPATH" ]]; then
+			mv $LOCKDPASSWDPATH/* $NEWPASSWDPATH/
+			echo "Migration Complete!"
+			printf "\n"
+			echo "Your New PassWD Path Is : $NEWPASSWDPATH"
+			echo "Copy This Path AS IS, And Then Change And Replace The Value Of 'LOCKDPASSWDPATH' Variable In The '$0' Executable Script Manually By Pasting This New Path."
+			break
+		else
+			echo "DirectoryPathError :- New PassWD Path Does Not Exist! Create The Path Manually Then Re-Process."
+			echo "Aborting!"
+			break
+		fi
+	else
+		echo "Confirmation Denied!"
+		echo "Aborting!"
+		break
+	fi
+}
+
+crud_passwd() {
+	while true :
+	do
+		printf "\n"
+		echo "Select Which Operation To Perform :- "
+		printf "\n"
+		echo "1. Create"
+		echo "2. Update"
+		echo "3. Delete"
+		echo "4. Migrate"
+		printf "\n"
+		echo -n "Option :- "
+		read -r CRUDOPTION
+		printf "\n"
+
+		case $CRUDOPTION in
+			1)
+				while true :
+				do
+					printf "\n"
+					echo "Select Which Operation To Perform :- "
+					printf "\n"
+					echo "1. Create A New Hostname"
+					echo "2. Create A New Username"
+					echo "3. Create A New Password"
+					printf "\n"
+					echo -n "Option :- "
+					read -r CRUDCREATEOPTION
+					printf "\n"
+
+					case $CRUDCREATEOPTION in
+						1)
+							crud_create_hname
+							break
+							;;
+						2)
+							crud_create_uname
+							break
+							;;
+						3)
+							crud_create_pword
+							break
+							;;
+						*)
+							echo "SelectionError :- Invalid Option!"
+							;;
+					esac
+				done
+				break
+				;;
+			2)
+				while true :
+				do
+					printf "\n"
+					echo "Select Which Operation To Perform :- "
+					printf "\n"
+					echo "1. Update Pre-Existing Hostname"
+					echo "2. Update Pre-Existing Username"
+					echo "3. Update Pre-Existing Password"
+					printf "\n"
+					echo -n "Option :- "
+					read -r CRUDUPDATEOPTION
+					printf "\n"
+
+					case $CRUDUPDATEOPTION in
+						1)
+							crud_update_hname
+							break
+							;;
+						2)
+							crud_update_uname
+							break
+							;;
+						3)
+							crud_update_pword
+							break
+							;;
+						*)
+							echo "SelectionError :- Invalid Option!"
+							;;
+					esac
+				done
+				break
+				;;
+			3)
+				while true :
+				do
+					printf "\n"
+					echo "Select Which Operation To Perform :- "
+					printf "\n"
+					echo "1. Delete Pre-Existing Hostname"
+					echo "2. Delete Pre-Existing Username"
+					echo "3. Delete Pre-Existing Password"
+					printf "\n"
+					echo -n "Option :- "
+					read -r CRUDDELETEOPTION
+					printf "\n"
+
+					case $CRUDDELETEOPTION in
+						1)
+							crud_delete_hname
+							break
+							;;
+						2)
+							crud_delete_uname
+							break
+							;;
+						3)
+							crud_delete_pword
+							break
+							;;
+						*)
+							echo "SelectionError :- Invalid Option!"
+							;;
+					esac
+				done
+				break
+				;;
+			*)
+				echo "SelectionError :- Invalid Option!"
+				;;
+		esac
+	done
+}
+
+crud_create_hname() {
+	printf "\n"
+	echo -n "Enter New Hostname :- "
+	read -r NEWHNAME
+	printf "\n"
+
+	echo "Creating The New Hostname '$NEWHNAME'"
+	echo -n "Confirm? (y/n) :- "
+	read -r CRUDCREATEHNAMECONFIRM
+	printf "\n"
+
+	if [[ $CRUDCREATEHNAMECONFIRM == "y" ]]; then
+		mkdir "$LOCKDPASSWDPATH/$(echo $NEWHNAME | OBFS_CHAIN)"
+		echo "New Hostname Created!"
+	else
+		echo "Confirmation Denied!"
+		echo "Aborting!"
+	fi
+}
+
+crud_create_uname() {
+	printf "\n"
+	echo -n "Enter The Pre-Existing Hostname For Which The Username Should Be Created :- "
+	read -r PREHNAME
+	printf "\n"
+
+	echo -n "Enter The New Username :- "
+	read -r NEWUNAME
+	printf "\n"
+
+	echo "Creating The New Username '$NEWUNAME' Under The Pre-Existing Hostname '$PREHNAME'"
+	echo -n "Confirm? (y/n) :- "
+	read -r CRUDCREATEUNAMECONFIRM
+	printf "\n"
+
+	if [[ $CRUDCREATEUNAMECONFIRM == "y" ]]; then
+		if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)" ]]; then
+			mkdir "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $NEWUNAME | OBFS_CHAIN)"
+			echo "New Username Created!"
+		else
+			echo "Hostname Does Not Exist!"
+			echo "Aborting!"
+		fi
+	else
+		echo "Confirmation Denied!"
+		echo "Aborting!"
+	fi
+}
+
+crud_create_pword() {
+	printf "\n"
+	echo -n "Enter The Pre-Existing Hostname In Which The Pre-Existing Username Exists For Which The Password Should Be Created :- "
+	read -r PREHNAME
+	printf "\n"
+
+	echo -n "Enter The Pre-Existing Username For Which The Password Should Be Created :- "
+	read -r PREUNAME
+	printf "\n"
+
+	echo -n "Enter The New Password :- "
+	read -rs NEWPWORD
+	printf "\n\n"
+
+	echo "Creating The New Password For Pre-Existing Username '$PREUNAME' Under Pre-Existing Hostname '$PREHNAME'"
+	echo -n "Confirm? (y/n) :- "
+	read -r CRUDCREATEPWORDCONFIRM
+	printf "\n"
+
+	if [[ $CRUDCREATEPWORDCONFIRM == "y" ]]; then
+		if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)" ]]; then
+			if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)" ]]; then
+				mkdir "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)/$(echo $NEWPWORD | OBFS_CHAIN)"
+				echo "New Password Created!"
+			else
+				echo "Username Does Not Exist!"
+				echo "Aborting!"
+			fi
+		else
+			echo "Hostname Does Not Exist!"
+			echo "Aborting!"
+		fi
+	else
+		echo "Confirmation Denied!"
+		echo "Aborting!"
+	fi
+}
+
+crud_update_hname() {
+        printf "\n"
+	echo -n "Enter The Pre-Existing Hostname That Should Be Updated :- "
+	read -r PREHNAME
+	printf "\n"
+
+        echo -n "Enter The New Hostname (MUST NOT Pre-Exist) :- "
+        read -r NEWHNAME
+        printf "\n"
+
+        echo "Updating The Pre-Existing Hostname '$PRENAME' To New Hostname '$NEWHNAME'"
+        echo -n "Confirm? (y/n) :- "
+        read -r CRUDUPDATEHNAMECONFIRM
+        printf "\n"
+
+        if [[ $CRUDUPDATEHNAMECONFIRM == "y" ]]; then
+		if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)" ]]; then
+	                mv "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)" "$LOCKDPASSWDPATH/$(echo $NEWHNAME | OBFS_CHAIN)"
+        	        echo "Hostname Updated!"
+		else
+                        echo "Hostname Does Not Exist!"
+                        echo "Aborting!"
+		fi
+        else
+                echo "Confirmation Denied!"
+                echo "Aborting!"
+        fi
+}
+
+crud_update_uname() {
+	printf "\n"
+	echo -n "Enter The Pre-Existing Hostname For Which The Pre-Existing Username Should Be Updated :- "
+	read -r PREHNAME
+	printf "\n"
+
+	echo -n "Enter The Pre-Existing Username That Should Be Updated :- "
+	read -r PREUNAME
+	printf "\n"
+
+	echo -n "Enter The New Username (MUST NOT Pre-Exist) :- "
+	read -r NEWUNAME
+	printf "\n"
+
+	echo "Updating The Pre-Existing Username '$PREUNAME' To The New Username '$NEWUNAME' Under The Pre-Existing Hostname '$PREHNAME'"
+	echo -n "Confirm? (y/n) :- "
+	read -r CRUDUPDATEUNAMECONFIRM
+	printf "\n"
+
+	if [[ $CRUDUPDATEUNAMECONFIRM == "y" ]]; then
+		if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)" ]]; then
+			if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)" ]]; then
+				mv "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)" "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $NEWUNAME | OBFS_CHAIN)"
+				echo "Username Updated!"
+			else
+				echo "Username Does Not Exist!"
+				echo "Aborting!"
+			fi
+		else
+			echo "Hostname Does Not Exist!"
+			echo "Aborting!"
+		fi
+	else
+		echo "Confirmation Denied!"
+		echo "Aborting!"
+	fi
+}
+
+crud_update_pword() {
+	printf "\n"
+	echo -n "Enter The Pre-Existing Hostname In Which The Username Exists For Which The Pre-Existing Password Should Be Updated :- "
+	read -r PREHNAME
+	printf "\n"
+
+	echo -n "Enter The Pre-Existing Username For Which The Pre-Existing Password Should Be Updated :- "
+	read -r PREUNAME
+	printf "\n"
+
+	echo -n "Enter The Pre-Existing Password That Should Be Updated :- "
+	read -r PREPWORD
+	printf "\n"
+
+	echo -n "Enter The New Password (MUST NOT Pre-Exist) :- "
+	read -r NEWPWORD
+	printf "\n"
+
+	echo "Updating The Pre-Existing Password For The Pre-Existing Username '$PREUNAME' Under The Pre-Existing Hostname '$PREHNAME'"
+	echo -n "Confirm? (y/n) :- "
+	read -r CRUDUPDATEPWORDCONFIRM
+	printf "\n"
+
+	if [[ $CRUDUPDATEPWORDCONFIRM == "y" ]]; then
+		if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)" ]]; then
+			if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)" ]]; then
+				if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)/$(echo $PREPWORD | OBFS_CHAIN)" ]]; then
+					mv "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)/$(echo $PREPWORD | OBFS_CHAIN)" "$LOCKDPASSWDPATH/$($echo PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)/$(echo $NEWPWORD | OBFS_CHAIN)"
+					echo "Password Updated!"
+				else
+					echo "Password Does Not Exist!"
+					echo "Aborting!"
+				fi
+			else
+				echo "Username Does Not Exist!"
+				echo "Aborting!"
+			fi
+		else
+			echo "Hostname Does Not Exist!"
+			echo "Aborting!"
+		fi
+	else
+		echo "Confirmation Denied!"
+		echo "Aborting!"
+	fi
+}
+
+crud_delete_hname() {
+	printf "\n"
+	echo -n "Enter The Pre-Existing Hostname :- "
+	read -r PREHNAME
+	printf "\n"
+
+	echo "Deleting The Pre-Existing Hostname '$PREHNAME' AND ALL Of It's Usernames AND ALL Of Their Passwords. THIS ACTION CANNOT BE UNDONE!"
+	echo -n "Confirm? (y/n) :- "
+	read -r CRUDDELETEHNAMECONFIRM
+	printf "\n"
+
+	if [[ $CRUDDELETEHNAMECONFIRM == "y" ]]; then
+		if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)" ]]; then
+			rm -r "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)"
+			echo "Hostname And All Of It's Usernames And All Of Their Passwords Are Deleted!"
+		else
+			echo "Hostname Does Not Exist!"
+			echo "Aborting!"
+		fi
+	else
+		echo "Confirmation Denied!"
+		echo "Aborting!"
+	fi
+}
+
+crud_delete_uname() {
+	printf "\n"
+	echo -n "Enter The Pre-Existing Hostname For Which The Pre-Existing Username Should Be Deleted :- "
+	read -r PREHNAME
+	printf "\n"
+
+	echo -n "Enter The Pre-Existing Username :- "
+	read -r PREUNAME
+	printf "\n"
+
+	echo "Deleting The Pre-Existing Username '$PREUNAME' Under The Pre-Existing Hostname '$PREHNAME' AND ALL Of It's Passwords. THIS ACTION CANNOT BE UNDONE!"
+	echo -n "Confirm? (y/n) :- "
+	read -r CRUDDELETEUNAMECONFIRM
+	printf "\n"
+
+	if [[ $CRUDDELETEUNAMECONFIRM == "y" ]]; then
+		if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)" ]]; then
+			if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)" ]]; then
+				rm -r "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)"
+				echo "Username And All Of It's Passwords Are Deleted!"
+			else
+				echo "Username Does Not Exist!"
+				echo "Aborting!"
+			fi
+		else
+			echo "Hostname Does Not Exist!"
+			echo "Aborting!"
+		fi
+	else
+		echo "Confirmation Denied!"
+		echo "Aborting!"
+	fi
+}
+
+crud_delete_pword() {
+	printf "\n"
+	echo -n "Enter The Pre-Existing Hostname In Which The Username Exists For Which The Pre-Existing Password Should Be Deleted :- "
+	read -r PREHNAME
+	printf "\n"
+
+	echo -n "Enter The Pre-Existing Username For Which The Pre-Existing Password Should Be Deleted :- "
+	read -r PREUNAME
+	printf "\n"
+
+	echo -n "Enter The Pre-Existing Password :- "
+	read -r PREPWORD
+	printf "\n"
+
+	echo "Deleting The Pre-Existing Password Of The Pre-Existing Username '$PREUNAME' Under The Pre-Existing Hostname '$PREHNAME'. THIS ACTION CANNOT BE UNDONE!"
+	echo -n "Confirm? (y/n) :- "
+	read -r CRUDDELETEPWORDCONFIRM
+	printf "\n"
+
+	if [[ $CRUDDELETEPWORDCONFIRM == "y" ]]; then
+		if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)" ]]; then
+			if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)" ]]; then
+				if [[ -d "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)/$(echo $PREPWORD | OBFS_CHAIN)" ]]; then
+					rm -r "$LOCKDPASSWDPATH/$(echo $PREHNAME | OBFS_CHAIN)/$(echo $PREUNAME | OBFS_CHAIN)/$(echo $PREPWORD | OBFS_CHAIN)"
+					echo "Username Deleted!"
+				else
+					echo "Password Does Not Exist!"
+					echo "Aborting!"
+				fi
+			else
+				echo "Username Does Not Exist!"
+				echo "Aborting!"
+			fi
+		else
+			echo "Hostname Does Not Exist!"
+			echo "Aborting!"
+		fi
+	else
+		echo "Confirmation Denied!"
+		echo "Aborting!"
+	fi
+}
+
+# crud_migrate_hname() {
+
+# }
+
+# crud_migrate_uname() {
+
+# }
+
+# crud_migrate_pword() {
+
+# }
+
+# hname_check
+
+if [[ $# -eq 0 ]]; then
+	echo "ArgumentError :- No Arguments Provided!"
+	echo "Aborting!"
+else
+	while [[ $# -gt 0 ]]; do
+		case $1 in
+			--initialize|--init|-i)
+				hname_check
+				break
+				;;
+			--print-passwd-directory-path|--ppdp|-p)
+				printf "\n"
+				echo "PassWD Path :- $LOCKDPASSWDPATH"
+				printf "\n"
+				break
+				;;
+			--migrate-passwd-directory|--mpd|-m)
+				migrate_passwd_directory
+				break
+				;;
+			--crud-passwd|--crudp|-u)
+				crud_passwd
+				break
+				;;
+			*)
+				printf "\n"
+				echo "ArgumentError :- Invalid Argument!"
+				echo "Aborting!"
+				printf "\n"
+				break
+				;;
+		esac
+	done
+fi
